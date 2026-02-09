@@ -57,15 +57,15 @@ pytest --cov=confix
 
 The framework is evaluated on the following public datasets:
 
-| Dataset | Classes | Features | Source |
-|---------|---------|----------|--------|
-| ISCXVPN2016 | 12 | 28 | [UNB](https://www.unb.ca/cic/datasets/vpn.html) |
-| ISCXTor2016 | 8 | 28 | [UNB](https://www.unb.ca/cic/datasets/tor.html) |
-| USTC-TFC2016 | 20 | 784 | [GitHub](https://github.com/yungshenglu/USTC-TFC2016) |
-| CICIoT2023 | 33 | 46 | [UNB](https://www.unb.ca/cic/datasets/iotdataset-2023.html) |
-| CIRA-CIC-DoHBrw-2020 | 2 | 33 | [UNB](https://www.unb.ca/cic/datasets/dohbrw-2020.html) |
-| CIC-Darknet2020 | 8 | 76 | [UNB](https://www.unb.ca/cic/datasets/darknet2020.html) |
-| DataCon2020 | 6 | 40 | [DataCon](https://datacon.qianxin.com/opendata) |
+| Dataset | Classes | Features | Noise Type | Source |
+|---------|---------|----------|------------|--------|
+| CIC-IoT2023 | 34 | 46 | Symmetric | [UNB](https://www.unb.ca/cic/datasets/iotdataset-2023.html) |
+| MQTT-IoT-IDS2020 | 5 | 33 | Symmetric | [IEEE](https://ieee-dataport.org/open-access/mqtt-iot-ids2020-mqtt-internet-things-intrusion-detection-dataset) |
+| TON-IoT | 10 | 44 | Symmetric | [UNSW](https://research.unsw.edu.au/projects/toniot-datasets) |
+| CICIDS-2018 | 15 | 80 | Asymmetric | [UNB](https://www.unb.ca/cic/datasets/ids-2018.html) |
+| ISCX-VPN2016 | 12 | 78 | Asymmetric | [UNB](https://www.unb.ca/cic/datasets/vpn.html) |
+| UNSW-NB15 | 10 | 42 | Asymmetric | [UNSW](https://research.unsw.edu.au/projects/unsw-nb15-dataset) |
+| CICIDS-2017 | 8 | 78 | Real-world | [UNB](https://www.unb.ca/cic/datasets/ids-2017.html) |
 
 Datasets are not included in this repository. Download from the links above and preprocess into CSV (features + label column) or NPZ (`X`, `y` arrays).
 
@@ -74,7 +74,7 @@ Datasets are not included in this repository. Download from the links above and 
 All hyperparameters are in `configs/default.yaml`. Key parameters:
 
 - **Graph**: `k` (KNN neighbours, default: `ceil(log2(N))`)
-- **Community**: `gamma_range` (0.1–2.0), `n_resolutions` (10)
+- **Community**: `gamma_range` (0.1–2.0), `n_resolutions` (20)
 - **Correction**: `theta_low` (0.3), `delta` (0.2)
 - **Model**: 512→256→128 MLP, GELU, dropout 0.3
 - **Training**: AdamW (lr=3e-4, wd=1e-4), cosine schedule, 5-epoch warmup, patience 15

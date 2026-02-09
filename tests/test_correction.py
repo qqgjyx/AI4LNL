@@ -32,33 +32,42 @@ def test_compute_label_distribution_sums_to_one(synthetic_labels):
     assert np.allclose(row_sums, 1.0, atol=1e-8)
 
 
+def test_compute_label_consistency_shape(synthetic_labels):
+    partitions = _make_partitions(len(synthetic_labels))
+    dist = compute_label_distribution(partitions, synthetic_labels)
+    H_tilde = compute_label_consistency(dist)
+    # Should be (N, R) — per sample, per resolution
+    assert H_tilde.shape == (len(synthetic_labels), 2)
+
+
 def test_compute_label_consistency_range(synthetic_labels):
     partitions = _make_partitions(len(synthetic_labels))
     dist = compute_label_distribution(partitions, synthetic_labels)
-    lc = compute_label_consistency(dist)
-    assert lc.shape == (len(synthetic_labels),)
-    assert np.all(lc >= 0) and np.all(lc <= 1.0 + 1e-8)
+    H_tilde = compute_label_consistency(dist)
+    assert np.all(H_tilde >= -1e-10) and np.all(H_tilde <= 1.0 + 1e-8)
 
 
 def test_compute_msc_shape(synthetic_labels):
     partitions = _make_partitions(len(synthetic_labels))
     msc = compute_merge_split_consistency(partitions)
-    assert msc.shape == (len(synthetic_labels),)
+    # Should be (N, R)
+    assert msc.shape == (len(synthetic_labels), 2)
     assert np.all(msc >= 0) and np.all(msc <= 1.0 + 1e-8)
 
 
 def test_compute_msc_single_resolution():
     part = [np.array([0, 0, 1, 1, 2])]
     msc = compute_merge_split_consistency(part)
+    assert msc.shape == (5, 1)
     assert np.allclose(msc, 1.0)
 
 
 def test_consensus_vote_shape(synthetic_labels):
     partitions = _make_partitions(len(synthetic_labels))
     dist = compute_label_distribution(partitions, synthetic_labels)
-    lc = compute_label_consistency(dist)
+    H_tilde = compute_label_consistency(dist)
     msc = compute_merge_split_consistency(partitions)
-    consensus = consensus_vote(dist, lc, msc)
+    consensus = consensus_vote(dist, H_tilde, msc)
     num_classes = int(synthetic_labels.max()) + 1
     assert consensus.shape == (len(synthetic_labels), num_classes)
 
@@ -66,9 +75,9 @@ def test_consensus_vote_shape(synthetic_labels):
 def test_consensus_vote_normalized(synthetic_labels):
     partitions = _make_partitions(len(synthetic_labels))
     dist = compute_label_distribution(partitions, synthetic_labels)
-    lc = compute_label_consistency(dist)
+    H_tilde = compute_label_consistency(dist)
     msc = compute_merge_split_consistency(partitions)
-    consensus = consensus_vote(dist, lc, msc)
+    consensus = consensus_vote(dist, H_tilde, msc)
     row_sums = consensus.sum(axis=1)
     assert np.allclose(row_sums, 1.0, atol=1e-6)
 
@@ -90,6 +99,7 @@ def test_correct_labels_no_change_on_clean():
 
 def test_correct_labels_flips_noisy():
     # Sample 0 has label 0 but consensus strongly says 1
+    # margin = P(1) - P(0) = 0.8 - 0.1 = 0.7 > delta=0.2, and P(0)=0.1 < theta=0.3
     labels = np.array([0, 1, 2])
     consensus = np.array([
         [0.1, 0.8, 0.1],   # label=0, but consensus says 1

@@ -117,20 +117,28 @@ def train(
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader,
-    epochs: int = 100,
+    epochs: int = 200,
     lr: float = 3e-4,
     weight_decay: float = 1e-4,
     warmup_epochs: int = 5,
     patience: int = 15,
     device: torch.device | str = "cpu",
+    class_weights: torch.Tensor | None = None,
 ) -> dict:
     """Full training loop with early stopping.
 
-    Returns dict with 'best_val_accuracy', 'best_val_macro_f1', 'best_epoch'.
+    Parameters
+    ----------
+    class_weights : optional tensor of per-class weights for CrossEntropyLoss.
+        Computed externally (e.g., inverse class frequency) for imbalanced datasets.
+
+    Returns dict with 'accuracy', 'macro_f1', 'best_epoch'.
     """
     model = model.to(device)
     optimizer, scheduler = build_optimizer(model, lr, weight_decay, epochs, warmup_epochs)
-    criterion = nn.CrossEntropyLoss()
+    if class_weights is not None:
+        class_weights = class_weights.to(device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     best_val_f1 = 0.0
     best_epoch = 0

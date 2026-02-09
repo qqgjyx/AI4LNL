@@ -9,7 +9,7 @@ from scipy.sparse import issparse
 def parallel_dt(
     graph,
     gamma_range: tuple[float, float] = (0.1, 2.0),
-    n_resolutions: int = 10,
+    n_resolutions: int = 20,
     seed: int = 42,
 ) -> list[np.ndarray]:
     """Run Leiden community detection across a range of resolution parameters.

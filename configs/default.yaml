@@ -6,7 +6,7 @@ graph:
 
 community:
   gamma_range: [0.1, 2.0]
-  n_resolutions: 10
+  n_resolutions: 20
 
 correction:
   theta_low: 0.3
@@ -20,7 +20,7 @@ training:
   lr: 3.0e-4
   weight_decay: 1.0e-4
   batch_size: 256
-  epochs: 100
+  epochs: 200
   patience: 15
   warmup_epochs: 5
 
@@ -31,4 +31,4 @@ noise:
   type: symmetric   # symmetric | asymmetric | adversarial
   rate: 0.2
 
-seeds: [42, 123, 456, 789, 1024]
+seeds: [2026, 2027, 2028, 2029, 2030]

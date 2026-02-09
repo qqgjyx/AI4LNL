@@ -8,8 +8,8 @@ def compute_label_distribution(
 ) -> np.ndarray:
     """Compute per-sample, per-resolution label distributions.
 
-    For each resolution r and sample i, counts how often each label appears
-    among the neighbours of i within the same community at resolution r.
+    p_{l,i}(y) = |{j : omega_l(j) = c_i^(l) AND y_tilde_j = y}|
+                 / |{j : omega_l(j) = c_i^(l)}|
 
     Returns
     -------
@@ -48,81 +48,81 @@ def compute_label_distribution(
 
 
 def compute_label_consistency(distributions: np.ndarray) -> np.ndarray:
-    """Compute normalized entropy H̃ per sample across resolutions.
+    """Compute per-sample, per-resolution normalized entropy.
 
-    H̃_i = 1 - H(mean_distribution_i) / log(C)
+    H̃_{l,i} = -(1 / log C) * SUM_y p_{l,i}(y) * log(p_{l,i}(y))
 
-    Returns values in [0, 1]; higher means more consistent.
+    Returns
+    -------
+    H_tilde : (N, R) array with values in [0, 1]. Lower means more consistent.
     """
     # distributions: (N, R, C)
-    mean_dist = distributions.mean(axis=1)  # (N, C)
-    C = mean_dist.shape[1]
+    C = distributions.shape[2]
     log_C = np.log(C + 1e-12)
-
-    # Entropy of mean distribution
     eps = 1e-12
-    entropy = -np.sum(mean_dist * np.log(mean_dist + eps), axis=1)
-    normalized_entropy = entropy / log_C
-    consistency = 1.0 - normalized_entropy
-    return consistency
+    # Entropy per (sample, resolution)
+    entropy = -np.sum(distributions * np.log(distributions + eps), axis=2)  # (N, R)
+    H_tilde = entropy / log_C
+    return H_tilde
 
 
 def compute_merge_split_consistency(partitions: list[np.ndarray]) -> np.ndarray:
     """Compute merge-split consistency (MSC) between adjacent resolutions.
 
-    MSC_i measures how stable sample i's community assignment is between
-    consecutive resolution levels. Returns per-sample scores in [0, 1].
+    MSC_{l,i} measures how stable sample i's community co-membership is between
+    resolution l and l+1 (Jaccard similarity of co-member sets).
+
+    Returns
+    -------
+    msc : (N, R) array. For the last resolution, MSC is set to 1.0.
     """
     n = len(partitions[0])
     R = len(partitions)
-
-    if R < 2:
-        return np.ones(n, dtype=np.float64)
-
-    scores = np.zeros(n, dtype=np.float64)
+    msc = np.ones((n, R), dtype=np.float64)
 
     for r in range(R - 1):
         part_a = np.asarray(partitions[r])
         part_b = np.asarray(partitions[r + 1])
 
         for i in range(n):
-            # Find co-members in resolution r
-            comm_a = part_a[i]
-            members_a = set(np.where(part_a == comm_a)[0].tolist())
+            members_a = set(np.where(part_a == part_a[i])[0].tolist())
+            members_b = set(np.where(part_b == part_b[i])[0].tolist())
 
-            # Find co-members in resolution r+1
-            comm_b = part_b[i]
-            members_b = set(np.where(part_b == comm_b)[0].tolist())
-
-            # Jaccard similarity of co-membership sets
             intersection = len(members_a & members_b)
             union = len(members_a | members_b)
             if union > 0:
-                scores[i] += intersection / union
+                msc[i, r] = intersection / union
+            else:
+                msc[i, r] = 1.0
 
-    scores /= (R - 1)
-    return scores
+    return msc
 
 
 def consensus_vote(
     distributions: np.ndarray,
-    label_consistency: np.ndarray,
+    H_tilde: np.ndarray,
     msc: np.ndarray,
 ) -> np.ndarray:
     """Confidence-weighted consensus vote P_i(y).
 
-    Combines multi-resolution label distributions weighted by label consistency
-    and merge-split consistency.
+    Conf_{l,i} = (1 - H̃_{l,i}) * MSC_{l,i}
+    alpha_l^(i) = Conf_{l,i} / SUM_{l'} Conf_{l',i}
+    P_i(y) = SUM_l alpha_l^(i) * p_{l,i}(y)
 
     Returns
     -------
     consensus : (N, C) array of consensus label probabilities.
     """
-    # distributions: (N, R, C), label_consistency: (N,), msc: (N,)
-    N, R, C = distributions.shape
-    weights = (label_consistency * msc)[:, None, None]  # (N, 1, 1)
-    weighted_dist = distributions * weights  # (N, R, C)
-    consensus = weighted_dist.mean(axis=1)  # (N, C)
+    # distributions: (N, R, C), H_tilde: (N, R), msc: (N, R)
+    conf = (1.0 - H_tilde) * msc  # (N, R)
+
+    # Normalize per sample to get alpha weights
+    conf_sum = conf.sum(axis=1, keepdims=True)  # (N, 1)
+    conf_sum = np.where(conf_sum > 0, conf_sum, 1.0)
+    alpha = conf / conf_sum  # (N, R)
+
+    # Weighted sum across resolutions
+    consensus = np.einsum("nr,nrc->nc", alpha, distributions)  # (N, C)
 
     # Normalize rows
     row_sums = consensus.sum(axis=1, keepdims=True)
@@ -140,15 +140,15 @@ def correct_labels(
     """Correct noisy labels based on consensus probabilities.
 
     A label is corrected when:
-    1. The consensus confidence for the current label < theta_low, AND
-    2. The top consensus candidate has probability > theta_low + delta.
+    1. P_i(ỹ_i) < theta_low  (current label has low consensus support), AND
+    2. max_{y != ỹ_i} P_i(y) - P_i(ỹ_i) > delta  (clear alternative exists).
 
     Parameters
     ----------
     labels : (N,) integer labels
     consensus : (N, C) consensus probabilities
-    theta_low : confidence threshold below which a label is considered suspect
-    delta : margin above theta_low required for correction
+    theta_low : confidence threshold below which a label is suspect
+    delta : margin between best alternative and current label required for correction
 
     Returns
     -------
@@ -162,11 +162,14 @@ def correct_labels(
 
     for i in range(n):
         current_conf = consensus[i, labels[i]]
-        best_class = int(np.argmax(consensus[i]))
-        best_conf = consensus[i, best_class]
+        # Best class excluding the current label
+        alt_probs = consensus[i].copy()
+        alt_probs[labels[i]] = -1.0
+        best_alt_class = int(np.argmax(alt_probs))
+        best_alt_conf = consensus[i, best_alt_class]
 
-        if current_conf < theta_low and best_conf > theta_low + delta:
-            corrected[i] = best_class
+        if current_conf < theta_low and (best_alt_conf - current_conf) > delta:
+            corrected[i] = best_alt_class
             corrected_mask[i] = True
 
     return corrected, corrected_mask
