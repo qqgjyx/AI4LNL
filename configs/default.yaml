@@ -1,0 +1,34 @@
+# Confix: default hyperparameters from the paper
+# "Learning across Resolutions: Encrypted Traffic Classification with Noisy Labels"
+
+graph:
+  k: null  # auto: ceil(log2(N))
+
+community:
+  gamma_range: [0.1, 2.0]
+  n_resolutions: 10
+
+correction:
+  theta_low: 0.3
+  delta: 0.2
+
+model:
+  hidden_dims: [512, 256, 128]
+  dropout: 0.3
+
+training:
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  batch_size: 256
+  epochs: 100
+  patience: 15
+  warmup_epochs: 5
+
+augmentation:
+  embed_dim: 16
+
+noise:
+  type: symmetric   # symmetric | asymmetric | adversarial
+  rate: 0.2
+
+seeds: [42, 123, 456, 789, 1024]

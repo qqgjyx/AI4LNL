@@ -1,0 +1,20 @@
+name: confix
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - scipy
+  - scikit-learn
+  - pandas
+  - pytorch
+  - igraph
+  - leidenalg
+  - pyyaml
+  - tqdm
+  - pytest
+  - pytest-cov
+  - pip
+  - pip:
+      - SGtSNEpiPy
