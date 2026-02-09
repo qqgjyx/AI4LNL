@@ -57,15 +57,15 @@ pytest --cov=confix
 
 The framework is evaluated on the following public datasets:
 
-| Dataset | Classes | Features | Noise Type | Source |
-|---------|---------|----------|------------|--------|
-| CIC-IoT2023 | 34 | 46 | Symmetric | [UNB](https://www.unb.ca/cic/datasets/iotdataset-2023.html) |
-| MQTT-IoT-IDS2020 | 5 | 33 | Symmetric | [IEEE](https://ieee-dataport.org/open-access/mqtt-iot-ids2020-mqtt-internet-things-intrusion-detection-dataset) |
-| TON-IoT | 10 | 44 | Symmetric | [UNSW](https://research.unsw.edu.au/projects/toniot-datasets) |
-| CICIDS-2018 | 15 | 80 | Asymmetric | [UNB](https://www.unb.ca/cic/datasets/ids-2018.html) |
-| ISCX-VPN2016 | 12 | 78 | Asymmetric | [UNB](https://www.unb.ca/cic/datasets/vpn.html) |
-| UNSW-NB15 | 10 | 42 | Asymmetric | [UNSW](https://research.unsw.edu.au/projects/unsw-nb15-dataset) |
-| CICIDS-2017 | 8 | 78 | Real-world | [UNB](https://www.unb.ca/cic/datasets/ids-2017.html) |
+| Dataset | Classes | Features | Source |
+|---------|---------|----------|------------|
+| CIC-IoT2023 | 34 | 46 | [UNB](https://www.unb.ca/cic/datasets/iotdataset-2023.html) |
+| MQTT-IoT-IDS2020 | 5 | 33 | [IEEE](https://ieee-dataport.org/open-access/mqtt-iot-ids2020-mqtt-internet-things-intrusion-detection-dataset) |
+| TON-IoT | 10 | 44 | [UNSW](https://research.unsw.edu.au/projects/toniot-datasets) |
+| CICIDS-2018 | 15 | 80 | [UNB](https://www.unb.ca/cic/datasets/ids-2018.html) |
+| ISCX-VPN2016 | 12 | 78 | [UNB](https://www.unb.ca/cic/datasets/vpn.html) |
+| UNSW-NB15 | 10 | 42 | [UNSW](https://research.unsw.edu.au/projects/unsw-nb15-dataset) |
+| CICIDS-2017 | 8 | 78 | [UNB](https://www.unb.ca/cic/datasets/ids-2017.html) |
 
 Datasets are not included in this repository. Download from the links above and preprocess into CSV (features + label column) or NPZ (`X`, `y` arrays).
 
